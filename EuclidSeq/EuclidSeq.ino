@@ -5,6 +5,11 @@
 // aims to be a dual channel pattern sequencer. 
 // KDS 2020-04-18 Version 1
 // 2020-04-19 Version 1.1 is functional !.
+//
+// update V1.2 now checks if the knobs hahve moved
+// so we dont have to recalculate the patterns so often.
+// probably no user impact, but we might support faster cycling.
+
 
 // firstly, a pinout description
 // digital writes:
@@ -33,7 +38,6 @@ float downconversion = 1024.0f  /  ((float)(MAX_PATTERN));
 // how many loops should we keep a trigger output online?
 int OUTPUT_DURATION_CYCLES = 5;
 // might be nice to put a trimpot here someday.
-
 
 
 bool PATTERN1[MAX_PATTERN];
@@ -75,7 +79,7 @@ void setup()
    }
    
    updateKnobs();
-   updatePatterns();
+
 }
 
 
@@ -145,23 +149,36 @@ void updateKnobs()
   // Lengths I want to scroll from 0-32 steps
   // and this analogRead sees 0-1023 on the Nano.
   // so divide by 32
+  int x = Length1; // save prev value so we can see if it's changed.
+  bool UPDATED = 0;// default to not seeing any change.
   Length1 = (int)(((float)analogRead(LENGTH_IN1))/downconversion);
   Length1 = (Length1 < 2)?2:Length1; // and round off the corners
   Length1 = (Length1 > (MAX_PATTERN-2))?MAX_PATTERN:Length1;
-
+  if(Length1 != x) UPDATED=1;
+  x=Length2;
   Length2 = (int)(((float)analogRead(LENGTH_IN2))/downconversion);
   Length2 = (Length2 < 2)?2:Length2;
   Length2 = (Length2 > (MAX_PATTERN-2))?MAX_PATTERN:Length2;
+  if(Length2 != x) UPDATED=1;
 
+  float y = Rotate1;
   Rotate1 = (float)(analogRead(ROTATE_IN1)) / 1024.0f; // 0-100%
+  if(abs(Rotate1 - y) > 0.05) UPDATED=1;
+  y=Rotate2;
   Rotate2 = (float)(analogRead(ROTATE_IN2)) / 1024.0f;
+  if(abs(Rotate2 - y) > 0.05) UPDATED=1;
 
   // Fill should be 100% at halfway due to the physical scaling
   // allows for +12V at CV jack, while letting the +5V be top.
+  y=Fill1;
   Fill1 = (float)(analogRead(FILL_IN1)) / 931.0f;
-  Fill2 = (float)(analogRead(FILL_IN2)) / 931.0f;
   Fill1 = (Fill1 > 1.0f)?1.0f:Fill1; // capped.
+  if(abs(Fill1 - y) > 0.05) UPDATED=1;
+  Fill2 = (float)(analogRead(FILL_IN2)) / 931.0f;
   Fill2 = (Fill2 > 1.0f)?1.0f:Fill2;
+  if(abs(Fill2 - y) > 0.05) UPDATED=1;
+
+  if(UPDATED) updatePatterns();
   
 }
 
@@ -233,7 +250,6 @@ void loop()
     }else{
       // downbeat. now we have time to do some math:
       updateKnobs();
-      updatePatterns();
       if(DEBUG) DEBUG_PRINTS();
     }
    }
