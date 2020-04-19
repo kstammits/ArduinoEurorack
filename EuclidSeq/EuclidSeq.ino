@@ -1,10 +1,9 @@
 //
 //
-// .c file
-// Arduino 1.8.10
-// EuclidSeq V0.1
+// .c file for Arduino 1.8.10
+// EuclidSeq V1.0
 // aims to be a dual channel pattern sequencer. 
-// KDS 2020-04-18 Version 0
+// KDS 2020-04-18 Version 1
 // 
 
 // firstly, a pinout description
@@ -67,7 +66,7 @@ void setup()
 
    if(DEBUG){
     Serial.begin(9600);
-    Serial.print("Hello! EuclidSeq V0.1\n");
+    Serial.print("Hello! EuclidSeq V1.0\n");
    }
 
    for(int i=0;i<MAX_PATTERN;i++){
@@ -95,14 +94,20 @@ void updatePatterns()
     PATTERN1[i] = 0;
     PATTERN2[i] = 0;
   }
-  
+  // Euclidean Sequences follow Bresenham's Line algorithm
+  // but Bresenham's is faster whereas I use floats 
   float stepSize; int nHits; int startStep; int stepHit;
   
   // fill the bool array. takes some math.
   nHits = (int)( Fill1 * (float)Length1 );
   startStep = (int)( Rotate1 * (float)Length1 );
-  for(int i=1;i <= nHits;i++){
-    stepHit = Length1/i + startStep;
+  stepSize = (float)nHits / (float)(Length2);
+  if(DEBUG){ 
+    Serial.print("nHits="); Serial.print(nHits);Serial.print(" startStep=");
+    Serial.print(startStep);Serial.print("\n");
+  }
+  for(int i=0;i < Length1;i++){
+    stepHit = floor(i*stepSize) + startStep;
     if(stepHit>=Length1) stepHit -= Length1;
     PATTERN1[stepHit] = 1;
   }
@@ -110,8 +115,9 @@ void updatePatterns()
   // repeat for channel 2
   nHits = (int)( Fill2 * (float)Length2 );
   startStep = (int)( Rotate2 * (float)Length2 );  
-  for(int i=1;i <= nHits;i++){
-    stepHit = Length2/i + startStep;
+  stepSize = (float)nHits / (float)(Length2);
+  for(int i=0;i < Length2;i++){
+    stepHit = floor(i*stepSize) + startStep;
     if(stepHit>=Length2) stepHit -= Length2;
     PATTERN2[stepHit] = 1;
   }
@@ -209,16 +215,15 @@ void loop()
     CLOCKSEEN = trigger; // fix that.
     if(trigger){
       stepClockTrigger();
-      if(DEBUG) DEBUG_PRINTS();
     }else{
       // downbeat. now we have time to do some math:
       updateKnobs();
       updatePatterns();
+      if(DEBUG) DEBUG_PRINTS();
     }
    }
    // turn on and off the outputs:
    updateOuts();
-
    delay(3); // milliseconds???   
 }
 
@@ -229,7 +234,7 @@ void DEBUG_PRINTS()
   Serial.print("F1= ");Serial.print(Fill1);Serial.print("\n");
   Serial.print("R1= ");Serial.print(Rotate1);Serial.print("\n");
   Serial.print("Pat1= { ");
-  for(int i=0 ; i < MAX_PATTERN;i++){
+  for(int i=0 ; i < Length1;i++){
     Serial.print(PATTERN1[i]); Serial.print(" , ");
   }Serial.print(" }\n");
   
