@@ -142,25 +142,30 @@ void updatePatterns()
 
 
 void updateKnobs()
-{ // read all six analogs and interpret results
-  // Lengths I want to scroll from 0-32 steps
-  // and this analogRead sees 0-1023 on the Nano.
-  // so divide by 32
-  int x = Length1; // save prev value so we can see if it's changed.
+{ 
+  // read all six analogs and interpret results
+  float y; int x;
   bool UPDATED = 0;// default to not seeing any change.
-  Length1 = (int)(((float)analogRead(LENGTH_IN1))/downconversion);
+
+
+  x = Length1; // save prev value so we can see if it's changed.
+  y=(float)analogRead(LENGTH_IN1)/1024.0f; // 0-100%.
+  Length1 = (int)(  y*(float)MAX_PATTERN );
   Length1 = (Length1 < 2)?2:Length1; // and round off the corners
   Length1 = (Length1 > (MAX_PATTERN-2))?MAX_PATTERN:Length1;
   if(Length1 != x) UPDATED=1;
+  
   x=Length2;
-  Length2 = (int)(((float)analogRead(LENGTH_IN2))/downconversion);
+  y=(float)analogRead(LENGTH_IN2)/1024.0f;
+  Length2 = (int)(  y*(float)MAX_PATTERN );
   Length2 = (Length2 < 2)?2:Length2;
   Length2 = (Length2 > (MAX_PATTERN-2))?MAX_PATTERN:Length2;
   if(Length2 != x) UPDATED=1;
 
-  float y = Rotate1;
+  y = Rotate1;
   Rotate1 = (float)(analogRead(ROTATE_IN1)) / 1024.0f; // 0-100%
   if(abs(Rotate1 - y) > 0.05) UPDATED=1;
+  
   y=Rotate2;
   Rotate2 = (float)(analogRead(ROTATE_IN2)) / 1024.0f;
   if(abs(Rotate2 - y) > 0.05) UPDATED=1;
@@ -168,10 +173,12 @@ void updateKnobs()
   // Fill should be 100% at halfway due to the physical scaling
   // allows for +12V at CV jack, while letting the +5V be top.
   y=Fill1;
-  Fill1 = (float)(analogRead(FILL_IN1)) / 931.0f;
+  Fill1 = (float)(analogRead(FILL_IN1)) / 900.0f;
   Fill1 = (Fill1 > 1.0f)?1.0f:Fill1; // capped.
   if(abs(Fill1 - y) > 0.05) UPDATED=1;
-  Fill2 = (float)(analogRead(FILL_IN2)) / 931.0f;
+  
+  y=Fill2;
+  Fill2 = (float)(analogRead(FILL_IN2)) / 900.0f;
   Fill2 = (Fill2 > 1.0f)?1.0f:Fill2;
   if(abs(Fill2 - y) > 0.05) UPDATED=1;
 
