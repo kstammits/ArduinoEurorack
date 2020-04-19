@@ -70,7 +70,7 @@ void setup()
 
    if(DEBUG){
     Serial.begin(9600);
-    Serial.print("Hello! EuclidSeq V1.1\n");
+    Serial.print("Hello! EuclidSeq V1.2\n");
    }
 
    for(int i=0;i<MAX_PATTERN;i++){
