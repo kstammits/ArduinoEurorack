@@ -1,12 +1,13 @@
 //
 //
 // .c file for Arduino 1.8.10
-// EuclidSeq V1.0
+// EuclidSeq V1.2
 // aims to be a dual channel pattern sequencer. 
+// it's got positive and negative outs, so 4 trigger channels
 // KDS 2020-04-18 Version 1
 // 2020-04-19 Version 1.1 is functional !.
 //
-// update V1.2 now checks if the knobs hahve moved
+// update V1.2 now checks if the knobs have moved
 // so we dont have to recalculate the patterns so often.
 // probably no user impact, but we might support faster cycling.
 
@@ -28,8 +29,11 @@
 #define ROTATE_IN1 A4
 #define ROTATE_IN2 A5
 
+/////////////////////////
+
 // how long is a long pattern?
 #define MAX_PATTERN 32
+// and how much do we scale the knob?
 float downconversion = 1024.0f  /  ((float)(MAX_PATTERN));
 
 // enable or disable serial messaging:
@@ -39,15 +43,12 @@ float downconversion = 1024.0f  /  ((float)(MAX_PATTERN));
 int OUTPUT_DURATION_CYCLES = 5;
 // might be nice to put a trimpot here someday.
 
-
+// save the states we're gonna use:
 bool PATTERN1[MAX_PATTERN];
 bool PATTERN2[MAX_PATTERN];
 
-
 void setup()                    
 {
-  
-
    pinMode(GATE_OUT1A, OUTPUT); // digitalWrite here plz
    pinMode(GATE_OUT1B, OUTPUT);
    pinMode(GATE_OUT2A, OUTPUT);
@@ -57,7 +58,6 @@ void setup()
    digitalWrite(GATE_OUT2A,LOW);
    digitalWrite(GATE_OUT1B,LOW);
    digitalWrite(GATE_OUT2B,LOW);
-   
    
    pinMode(TRIGGER_IN, INPUT); // this guy has a transistor inverter
 
@@ -78,11 +78,10 @@ void setup()
     PATTERN2[i] = 0; // will update in a second tho
    }
    
-   updateKnobs();
-
+   updateKnobs(); // initializer
 }
 
-
+// these defaults are never used since setup() recalculates things.
 int Length1 = 8;
 int Length2 = 8;
 float Fill1 = 0.50f;
@@ -108,8 +107,8 @@ void updatePatterns()
   stepSize = (float)nHits / (float)(Length1);
   if(DEBUG){ 
     Serial.print("nHits="); Serial.print(nHits);
-    Serial.print(" startStep="); Serial.print(startStep);
-    Serial.print(" stepSize=");Serial.print(stepSize);
+    Serial.print("  startStep="); Serial.print(startStep);
+    Serial.print("  stepSize=");Serial.print(stepSize);
     Serial.print("\n");
   }
   ctr = 0.50f;
@@ -138,8 +137,6 @@ void updatePatterns()
       PATTERN2[stepHit] = 1;
     }
   }
-  
-  
   
 }
 
@@ -182,8 +179,7 @@ void updateKnobs()
   
 }
 
-// gonna usea countdown to keep the trigger high for a few milliseconds.
-
+// gonna use a countdown to keep the trigger high for a few milliseconds.
 int triggertime[4] = {0,0,0,0};
 bool gateState[4] = {0,0,0,0}; // remember what we set
 int gatePin[4] = {GATE_OUT1A, GATE_OUT1B, GATE_OUT2A, GATE_OUT2B};
@@ -213,6 +209,7 @@ void updateOuts()
    
 }
 
+
 // what step are we on right now?
 int Step1= Length1;
 int Step2= Length2;
@@ -234,38 +231,38 @@ void stepClockTrigger()
   }
 }
 
+
 // what was the last state of the trigger input??
 bool CLOCKSEEN=0;
+
 
 void loop()                    
 {
    // reads with inversion due to tre transistor follower
    bool trigger = !digitalRead(TRIGGER_IN);
-   
-   if(trigger != CLOCKSEEN){
-    // then it's changed since last loop.
+   if(trigger != CLOCKSEEN){ // then it's changed since last loop.
     CLOCKSEEN = trigger; // fix that.
     if(trigger){
       stepClockTrigger();
-    }else{
-      // downbeat. now we have time to do some math:
+    }else{ // downbeat. now we have time to do some math:
       updateKnobs();
       if(DEBUG) DEBUG_PRINTS();
     }
    }
-   // turn on and off the outputs:
-   updateOuts();
-   delay(3); // milliseconds???   
+   updateOuts();  // turn on and off the outputs:
+   delay(3); // milliseconds   
 }
 
 
 void DEBUG_PRINTS()
 {
-  Serial.print("L1= ");Serial.print(Length1); Serial.print("\n");
-  Serial.print("F1= ");Serial.print(Fill1);Serial.print("\n");
+  Serial.print("L1= ");Serial.print(Length1); Serial.print("\t");
+  Serial.print("F1= ");Serial.print(Fill1);Serial.print("\t");
   Serial.print("R1= ");Serial.print(Rotate1);Serial.print("\n");
   Serial.print("Pat1= { ");
   for(int i=0 ; i < Length1;i++){
+    // WARNING this part can take a while if Length1 is too high.
+    // little CPU gets funny if we overload it here. 
     Serial.print(PATTERN1[i]); Serial.print(" , ");
   }Serial.print(" }\n");
   
