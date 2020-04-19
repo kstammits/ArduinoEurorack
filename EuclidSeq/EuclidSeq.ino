@@ -88,14 +88,34 @@ float Rotate1 = 0.0f;
 float Rotate2 = 0.0f;
 
 void updatePatterns()
-{ // fill the bool array. takes some math.
-  int nHits = Fill1 * Length1;
-  int nMisses = Length1 - nHits;
-  int startStep = Rotate1 * Length1;
+{ 
+  // flatten everyone to start.
+  int n = max(Length1, Length2);
+  for(int i=0;i<n;i++){
+    PATTERN1[i] = 0;
+    PATTERN2[i] = 0;
+  }
   
-// TODO code this.
+  float stepSize; int nHits; int startStep; int stepHit;
+  
+  // fill the bool array. takes some math.
+  nHits = (int)( Fill1 * (float)Length1 );
+  startStep = (int)( Rotate1 * (float)Length1 );
+  for(int i=1;i <= nHits;i++){
+    stepHit = Length1/i + startStep;
+    if(stepHit>=Length1) stepHit -= Length1;
+    PATTERN1[stepHit] = 1;
+  }
 
-  
+  // repeat for channel 2
+  nHits = (int)( Fill2 * (float)Length2 );
+  startStep = (int)( Rotate2 * (float)Length2 );  
+  for(int i=1;i <= nHits;i++){
+    stepHit = Length2/i + startStep;
+    if(stepHit>=Length2) stepHit -= Length2;
+    PATTERN2[stepHit] = 1;
+  }
+
 }
 
 
@@ -189,6 +209,7 @@ void loop()
     CLOCKSEEN = trigger; // fix that.
     if(trigger){
       stepClockTrigger();
+      if(DEBUG) DEBUG_PRINTS();
     }else{
       // downbeat. now we have time to do some math:
       updateKnobs();
@@ -197,5 +218,19 @@ void loop()
    }
    // turn on and off the outputs:
    updateOuts();
+
    delay(3); // milliseconds???   
+}
+
+
+void DEBUG_PRINTS()
+{
+  Serial.print("L1= ");Serial.print(Length1); Serial.print("\n");
+  Serial.print("F1= ");Serial.print(Fill1);Serial.print("\n");
+  Serial.print("R1= ");Serial.print(Rotate1);Serial.print("\n");
+  Serial.print("Pat1= { ");
+  for(int i=0 ; i < MAX_PATTERN;i++){
+    Serial.print(PATTERN1[i]); Serial.print(" , ");
+  }Serial.print(" }\n");
+  
 }
