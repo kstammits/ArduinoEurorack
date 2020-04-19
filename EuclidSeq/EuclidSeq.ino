@@ -4,7 +4,7 @@
 // EuclidSeq V1.0
 // aims to be a dual channel pattern sequencer. 
 // KDS 2020-04-18 Version 1
-// 
+// 2020-04-19 Version 1.1 is functional !.
 
 // firstly, a pinout description
 // digital writes:
@@ -28,7 +28,7 @@
 float downconversion = 1024.0f  /  ((float)(MAX_PATTERN));
 
 // enable or disable serial messaging:
-#define DEBUG 1
+#define DEBUG 0
 
 // how many loops should we keep a trigger output online?
 int OUTPUT_DURATION_CYCLES = 5;
@@ -96,32 +96,47 @@ void updatePatterns()
   }
   // Euclidean Sequences follow Bresenham's Line algorithm
   // but Bresenham's is faster whereas I use floats 
-  float stepSize; int nHits; int startStep; int stepHit;
+  float stepSize; int nHits; int startStep; int stepHit; float ctr;
   
   // fill the bool array. takes some math.
   nHits = (int)( Fill1 * (float)Length1 );
   startStep = (int)( Rotate1 * (float)Length1 );
-  stepSize = (float)nHits / (float)(Length2);
+  stepSize = (float)nHits / (float)(Length1);
   if(DEBUG){ 
-    Serial.print("nHits="); Serial.print(nHits);Serial.print(" startStep=");
-    Serial.print(startStep);Serial.print("\n");
+    Serial.print("nHits="); Serial.print(nHits);
+    Serial.print(" startStep="); Serial.print(startStep);
+    Serial.print(" stepSize=");Serial.print(stepSize);
+    Serial.print("\n");
   }
+  ctr = 0.50f;
   for(int i=0;i < Length1;i++){
-    stepHit = floor(i*stepSize) + startStep;
-    if(stepHit>=Length1) stepHit -= Length1;
-    PATTERN1[stepHit] = 1;
+    ctr += stepSize;
+    if(ctr > 1.0f){
+      ctr -= 1.0f;
+      stepHit = i+startStep;
+      if(stepHit >= Length1) stepHit -= Length1;
+      PATTERN1[stepHit] = 1;
+    }
   }
 
   // repeat for channel 2
+  // fill the bool array. takes some math.
   nHits = (int)( Fill2 * (float)Length2 );
-  startStep = (int)( Rotate2 * (float)Length2 );  
+  startStep = (int)( Rotate2 * (float)Length2 );
   stepSize = (float)nHits / (float)(Length2);
+  ctr = 0.50f;
   for(int i=0;i < Length2;i++){
-    stepHit = floor(i*stepSize) + startStep;
-    if(stepHit>=Length2) stepHit -= Length2;
-    PATTERN2[stepHit] = 1;
+    ctr += stepSize;
+    if(ctr > 1.0f){
+      ctr -= 1.0f;
+      stepHit = i+startStep;
+      if(stepHit >= Length2) stepHit -= Length2;
+      PATTERN2[stepHit] = 1;
+    }
   }
-
+  
+  
+  
 }
 
 
@@ -143,8 +158,8 @@ void updateKnobs()
 
   // Fill should be 100% at halfway due to the physical scaling
   // allows for +12V at CV jack, while letting the +5V be top.
-  Fill1 = (float)(analogRead(FILL_IN1)) / 512.0f;
-  Fill2 = (float)(analogRead(FILL_IN2)) / 512.0f;
+  Fill1 = (float)(analogRead(FILL_IN1)) / 931.0f;
+  Fill2 = (float)(analogRead(FILL_IN2)) / 931.0f;
   Fill1 = (Fill1 > 1.0f)?1.0f:Fill1; // capped.
   Fill2 = (Fill2 > 1.0f)?1.0f:Fill2;
   
