@@ -9,27 +9,27 @@
 
 // firstly, a pinout description
 // digital writes:
-#define GATE_OUT1A  3
-#define GATE_OUT1B  4
-#define GATE_OUT2A  5
-#define GATE_OUT2B  6
+#define GATE_OUT1A  2
+#define GATE_OUT1B  3
+#define GATE_OUT2A  4
+#define GATE_OUT2B  5
 
 // digital reads:
-#define TRIGGER_IN  4
+#define TRIGGER_IN  6
 // analog reads:
-#define LENGTH_IN1 8
-#define LENGTH_IN2 9
-#define FILL_IN1 8
-#define FILL_IN2 9
-#define ROTATE_IN1 8
-#define ROTATE_IN2 9
+#define LENGTH_IN1 A2
+#define LENGTH_IN2 A3
+#define FILL_IN1 A7
+#define FILL_IN2 A6
+#define ROTATE_IN1 A4
+#define ROTATE_IN2 A5
 
 // how long is a long pattern?
 #define MAX_PATTERN 32
 float downconversion = 1024.0f  /  ((float)(MAX_PATTERN));
 
 // enable or disable serial messaging:
-#define DEBUG 0
+#define DEBUG 1
 
 // how many loops should we keep a trigger output online?
 int OUTPUT_DURATION_CYCLES = 5;
