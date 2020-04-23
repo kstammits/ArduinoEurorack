@@ -204,12 +204,7 @@ void updatePatterns_Euclid()
   nHits = (int)( Fill1 * (float)Length1 );
   startStep = (int)( Rotate1 * (float)Length1 );
   stepSize = (float)nHits / (float)(Length1);
-  if(DEBUG){ 
-    Serial.print("nHits="); Serial.print(nHits);
-    Serial.print("  startStep="); Serial.print(startStep);
-    Serial.print("  stepSize=");Serial.print(stepSize);
-    Serial.print("\n");
-  }
+
   ctr = 0.50f;
   for(int i=0;i < Length1;i++){
     ctr += stepSize;
@@ -226,6 +221,12 @@ void updatePatterns_Euclid()
   nHits = (int)( Fill2 * (float)Length2 );
   startStep = (int)( Rotate2 * (float)Length2 );
   stepSize = (float)nHits / (float)(Length2);
+  if(DEBUG){ 
+    Serial.print("nHits="); Serial.print(nHits);
+    Serial.print("  startStep="); Serial.print(startStep);
+    Serial.print("  stepSize=");Serial.print(stepSize);
+    Serial.print("\n");
+  }
   ctr = 0.50f;
   for(int i=0;i < Length2;i++){
     ctr += stepSize;
@@ -258,18 +259,18 @@ void updatePatterns_Grids()
   for(int i=0;i < Length1;i++){
    // do something with PATTERN1 and PATTERN2
    PDBL = lowByte( PDB0[i+start1]) ;
-   PATTERN1[i] = (bFill1 > (PDBL & B00001111) );
-   PATTERN2[i] = (bFill1 > ( (PDBL & B11110000) >> 4 ));
+   PATTERN1[i] = (bFill1 >= (PDBL & B00001111) );
+   PATTERN2[i] = (bFill1 >= ( (PDBL & B11110000) >> 4 ));
   }
   for(int i=0;i < Length2;i++){
    // do something with PATTERN3 and PATTERN4
    PDBH = highByte( PDB0[i+start2]) ;
-   PATTERN3[i] = (bFill2 > (PDBL & B00001111) );
-   PATTERN4[i] = (bFill2 > ( (PDBL & B11110000) >> 4 ));
+   PATTERN3[i] = (bFill2 >= (PDBH & B00001111) );
+   PATTERN4[i] = (bFill2 >= ( (PDBH & B11110000) >> 4 ));
   }
   if(DEBUG){ 
-    Serial.print("bFill1="); Serial.print(bFill1);
-    Serial.print("  start1="); Serial.print(start1);
+    Serial.print("bFill2="); Serial.print(bFill2);
+    Serial.print("  start2="); Serial.print(start2);
     Serial.print("\n");
   }
 }
@@ -443,14 +444,14 @@ void loop()
 
 void DEBUG_PRINTS()
 {
-  Serial.print("L1= ");Serial.print(Length1); Serial.print("\t");
-  Serial.print("F1= ");Serial.print(Fill1);Serial.print("\t");
-  Serial.print("R1= ");Serial.print(Rotate1);Serial.print("\n");
-  Serial.print("Pat1= { ");
-  for(int i=0 ; i < Length1;i++){
+  Serial.print("L2= ");Serial.print(Length2); Serial.print("\t");
+  Serial.print("F2= ");Serial.print(Fill2);Serial.print("\t");
+  Serial.print("R2= ");Serial.print(Rotate2);Serial.print("\n");
+  Serial.print("Pat2= { ");
+  for(int i=0 ; i < Length2;i++){
     // WARNING this part can take a while if Length1 is too high.
     // little CPU gets funny if we overload it here. 
-    Serial.print(PATTERN1[i]); Serial.print(" , ");
+    Serial.print(PATTERN2[i]); Serial.print(" , ");
   }Serial.print(" }\n");
   
 }
