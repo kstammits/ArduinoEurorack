@@ -6,196 +6,117 @@
 
 // these variables are holding 64 or 512 steps fo sequence
 // but due to knob precision, it's scaled back to 32/256
-// so half the stuff isnt used yet.
+
+
+#include <SPI.h>
+#include <DAC_MCP49xx.h>
+
+// The Arduino pin used for the slave select / chip select
+// to enable the MCP DAC!
+#define SS_PIN 10
+
+// Arduino Nano pinout::
+//SPI:
+//10 (SS) or Chip Select,
+//11 (MOSI),
+//12 (MISO),
+//13 (SCK).
+
+
+//Set up the DAC
+DAC_MCP49xx dac(DAC_MCP49xx::MCP4922, SS_PIN);
+
+/////////////////////////
+// version TM3 on 2021-01-20
+// looking to convert the clock/trig statemachine into an interrupt.
+// refactored
+// V 4 is now trying to change the statemachine into an interrupt machine.
+// but that only works on pins 2&3 of the nano
+// and now the sequences go from 1-4095
 
 int pinP1 = A0;
 int pinP2 = A2;
 int pinL1 = A1;
 int pinL2 = A3;
 
-int pinO1 = 3;
-int pinO2 = 5;
-int pinC1 = 11;
-int pinC2 = 12;
+// this changed recently:::
+int pinC1 = 2;
+int pinC2 = 3;
 
-int pinS1 = 7;
-int pinS2 = 8;
+// pin S1 and S2 were changed recently to suit an error in the PCB v1
+int pinS1 = 8;
+int pinS2 = 7;
 
-byte TMEM2[32];
-byte TMEM1[32];
+int TMEM2[32];
+int TMEM1[32];
 
-
-const int SEQMEM1[256] = { 33 , 36 , 29 , 31 , 27 , 21 , 30 , 34 , 45 , 38 , 24 , 41 , 31 , 36 , 36 , 30 , 52 , 40 , 33 , 30 , 31 , 29 , 38 , 35 , 26 , 26 , 10 , 29 , 44 , 25 , 40 , 34 , 33 , 31 , 33 , 53 , 14 , 29 , 35 , 35 , 40 , 23 , 34 , 26 , 35 , 36 , 18 , 25 , 26 , 23 , 46 , 60 , 43 , 8 , 22 , 54 , 42 , 12 , 28 , 31 , 21 , 58 , 48 , 6 , 26 , 57 , 27 , 7 , 33 , 43 , 47 , 47 , 18 , 28 , 29 , 12 , 43 , 35 , 32 , 37 , 17 , 46 , 26 , 35 , 55 , 32 , 30 , 12 , 13 , 42 , 48 , 28 , 33 , 23 , 44 , 51 , 18 , 13 , 31 , 29 , 34 , 39 , 47 , 40 , 20 , 43 , 34 , 6 , 33 , 43 , 29 , 53 , 35 , 14 , 44 , 47 , 10 , 25 , 46 , 30 , 14 , 23 , 48 , 38 , 23 , 33 , 26 , 17 , 48 , 52 , 35 , 32 , 34 , 44 , 21 , 31 , 31 , 9 , 33 , 32 , 21 , 28 , 36 , 59 , 42 , 24 , 38 , 32 , 35 , 37 , 17 , 6 , 37 , 63 , 44 , 14 , 19 , 42 , 52 , 22 , 24 , 39 , 13 , 27 , 48 , 20 , 39 , 31 , 37 , 62 , 8 , 7 , 34 , 26 , 51 , 50 , 22 , 26 , 25 , 24 , 47 , 46 , 37 , 33 , 9 , 38 , 37 , 31 , 50 , 23 , 35 , 29 , 33 , 39 , 17 , 24 , 26 , 30 , 45 , 29 , 17 , 44 , 26 , 31 , 38 , 28 , 55 , 31 , 23 , 46 , 43 , 28 , 1 , 20 , 48 , 41 , 43 , 27 , 32 , 48 , 31 , 26 , 23 , 42 , 33 , 17 , 29 , 26 , 42 , 26 , 21 , 38 , 39 , 58 , 31 , 28 , 34 , 5 , 13 , 49 , 36 , 45 , 53 , 7 , 25 , 36 , 26 , 35 , 37 , 44 , 22 , 21 , 30 , 35 , 51 , 27 };
-const int SEQMEM2[256] = { 54 , 53 , 16 , 26 , 18 , 20 , 36 , 23 , 33 , 45 , 56 , 21 , 32 , 42 , 26 , 18 , 12 , 59 , 51 , 8 , 14 , 59 , 31 , 6 , 53 , 59 , 18 , 3 , 22 , 34 , 56 , 28 , 36 , 44 , 27 , 31 , 19 , 31 , 29 , 24 , 28 , 39 , 37 , 25 , 47 , 30 , 25 , 36 , 41 , 56 , 20 , 14 , 27 , 24 , 40 , 59 , 28 , 11 , 19 , 41 , 41 , 28 , 38 , 20 , 30 , 34 , 25 , 54 , 25 , 19 , 60 , 49 , 27 , 16 , 11 , 26 , 53 , 37 , 21 , 41 , 20 , 27 , 53 , 21 , 25 , 33 , 41 , 34 , 24 , 25 , 43 , 42 , 36 , 34 , 19 , 32 , 45 , 32 , 1 , 50 , 36 , 2 , 32 , 43 , 50 , 44 , 27 , 15 , 46 , 32 , 21 , 43 , 29 , 26 , 47 , 22 , 31 , 50 , 22 , 20 , 16 , 55 , 45 , 21 , 18 , 25 , 53 , 47 , 21 , 24 , 46 , 30 , 26 , 34 , 42 , 13 , 29 , 58 , 19 , 16 , 29 , 42 , 46 , 13 , 30 , 39 , 28 , 47 , 41 , 11 , 25 , 54 , 14 , 14 , 36 , 39 , 27 , 48 , 56 , 28 , 24 , 13 , 14 , 47 , 48 , 30 , 23 , 15 , 49 , 42 , 21 , 33 , 40 , 33 , 23 , 43 , 28 , 13 , 41 , 35 , 37 , 38 , 32 , 42 , 15 , 12 , 42 , 41 , 19 , 16 , 59 , 55 , 17 , 18 , 35 , 30 , 27 , 24 , 25 , 33 , 26 , 39 , 49 , 29 , 33 , 32 , 38 , 36 , 35 , 47 , 14 , 35 , 31 , 17 , 36 , 36 , 29 , 19 , 24 , 30 , 55 , 40 , 33 , 24 , 33 , 32 , 6 , 55 , 40 , 23 , 41 , 27 , 29 , 33 , 25 , 23 , 41 , 29 , 42 , 63 , 8 , 23 , 57 , 30 , 24 , 29 , 14 , 23 , 49 , 32 , 32 , 26 , 41 , 54 , 14 , 16 };
+// the MCP4922 has two channels at 12 bits, so 0-4095
+const int SEQMEM1[256] = { 1500 , 1981 , 2228 , 3307 , 1659 , 2171 , 3332 , 1145 , 855 , 2099 , 3830 , 1600 , 2011 , 1707 , 1938 , 2987 , 528 , 680 , 2655 , 2607 , 3323 , 2371 , 1867 , 2413 , 37 , 1411 , 2357 , 1982 , 3296 , 2558 , 770 , 1316 , 3384 , 3363 , 1405 , 1488 , 3025 , 1892 , 630 , 2566 , 2220 , 476 , 1705 , 2203 , 3707 , 1964 , 1868 , 3985 , 716 , 80 , 3010 , 1900 , 1729 , 2476 , 1401 , 2813 , 2352 , 1021 , 1326 , 3176 , 3778 , 775 , 1750 , 3361 , 792 , 669 , 3336 , 1978 , 1119 , 3366 , 2114 , 2443 , 2200 , 875 , 2660 , 3260 , 1742 , 1556 , 824 , 1272 , 3540 , 2393 , 1251 , 3158 , 2400 , 1238 , 737 , 2666 , 3375 , 296 , 2249 , 2339 , 2431 , 3576 , 154 , 1356 , 3013 , 1717 , 3120 , 1664 , 1 , 1437 , 3402 , 3839 , 1455 , 2372 , 2079 , 1357 , 3274 , 2765 , 1380 , 1614 , 2625 , 403 , 1782 , 4094 , 779 , 173 , 2729 , 2092 , 2847 , 2858 , 585 , 2485 , 2490 , 433 , 1001 , 3321 , 2454 , 1724 , 2294 , 3074 , 2916 , 1979 , 572 , 488 , 3613 , 3193 , 1442 , 1849 , 2829 , 1595 , 2176 , 1261 , 1353 , 3260 , 2295 , 2032 , 1970 , 1862 , 1165 , 1122 , 1590 , 1827 , 2435 , 3703 , 3131 , 736 , 1041 , 3294 , 1394 , 1793 , 3967 , 809 , 712 , 3010 , 1873 , 2703 , 2791 , 329 , 2883 , 3826 , 585 , 2048 , 1546 , 547 , 3832 , 3131 , 123 , 1089 , 2311 , 2565 , 3843 , 1160 , 1357 , 3646 , 523 , 349 , 3758 , 3769 , 556 , 1653 , 2080 , 1158 , 2572 , 3176 , 2464 , 1820 , 1994 , 1103 , 2614 , 1400 , 1608 , 2239 , 723 , 2466 , 3803 , 2825 , 2075 , 1573 , 1227 , 1982 , 2399 , 2537 , 1464 , 1143 , 2780 , 3151 , 1626 , 1001 , 968 , 1627 , 2792 , 3790 , 2089 , 2004 , 2993 , 551 , 1237 , 3453 , 1095 , 717 , 3300 , 1976 , 1780 , 3114 , 2599 , 2356 , 914 , 1878 , 3181 , 1226 , 1239 , 3262 , 1783 , 1983 , 2968 , 1133 , 1018 , 1578 , 2459 , 2016 , 1036 , 2001 , 2907 , 2041 };
+const int SEQMEM2[256] = { 2077 , 2400 , 2602 , 2350 , 2086 , 1723 , 1956 , 2421 , 2013 , 1524 , 1540 , 2142 , 3372 , 2180 , 1206 , 2669 , 2828 , 465 , 1648 , 2846 , 890 , 3364 , 3369 , 662 , 824 , 2052 , 3814 , 1797 , 1114 , 3773 , 2729 , 42 , 537 , 2172 , 3102 , 2974 , 2061 , 1565 , 1777 , 2723 , 3351 , 3072 , 956 , 1108 , 3033 , 1747 , 339 , 2917 , 3701 , 2286 , 417 , 2225 , 2621 , 652 , 1944 , 2368 , 2585 , 2042 , 2977 , 2567 , 1085 , 1380 , 2871 , 1906 , 1724 , 2373 , 1542 , 3683 , 1973 , 258 , 2288 , 3129 , 3498 , 1717 , 346 , 1892 , 3609 , 2645 , 1575 , 2861 , 735 , 315 , 2303 , 1837 , 3739 , 2525 , 1653 , 1708 , 1473 , 2242 , 2359 , 2911 , 1457 , 1806 , 3554 , 3342 , 1874 , 424 , 2369 , 3040 , 1938 , 2129 , 2073 , 1201 , 1085 , 3589 , 2847 , 1665 , 1456 , 862 , 1538 , 2170 , 2341 , 2787 , 3116 , 1061 , 2250 , 3243 , 2057 , 1246 , 1602 , 2650 , 2873 , 1534 , 934 , 2200 , 2863 , 2695 , 1813 , 2677 , 1649 , 1837 , 2365 , 862 , 1908 , 3606 , 2786 , 1350 , 795 , 1277 , 2298 , 4094 , 2670 , 38 , 1998 , 3267 , 1821 , 1343 , 3337 , 3390 , 395 , 1337 , 2179 , 2613 , 3527 , 1155 , 1301 , 2540 , 2497 , 1271 , 1686 , 3427 , 2847 , 1406 , 214 , 3257 , 4063 , 1577 , 1999 , 788 , 1112 , 4000 , 2568 , 1876 , 1445 , 1373 , 3179 , 2180 , 1885 , 823 , 2096 , 3886 , 2257 , 1092 , 1304 , 3081 , 2733 , 2397 , 1357 , 1 , 2286 , 3087 , 3101 , 2283 , 558 , 2845 , 2626 , 1898 , 1810 , 2037 , 2428 , 789 , 1080 , 1804 , 2868 , 3271 , 2718 , 939 , 1790 , 2831 , 1564 , 1560 , 3130 , 2106 , 1332 , 3124 , 2748 , 2733 , 564 , 1866 , 3100 , 1831 , 2286 , 1248 , 2347 , 3303 , 1857 , 2097 , 806 , 439 , 3754 , 3930 , 1990 , 1687 , 2180 , 606 , 1541 , 2132 , 1248 , 2178 , 2615 , 1824 , 1787 , 2164 , 3076 , 2147 , 827 , 3877 , 3155 , 681 , 2844 , 1745 , 1176 , 3874 , 2460 , 1162 };
 
 
 int SM1i=0;
 int SM2i=0;
 
-bool CLOCKSEEN1;
-bool CLOCKSEEN2;
+volatile bool CLOCKSEEN1;
+volatile bool CLOCKSEEN2;
 
+bool DEBUG=0;
+
+// put your setup code here, to run once:
 void setup() {
-  // put your setup code here, to run once:
-pinMode(A0, INPUT);
-pinMode(A1, INPUT);
-pinMode(A2, INPUT);
-pinMode(A3, INPUT);
 
-pinMode(pinO2, OUTPUT);
-pinMode(pinO1, OUTPUT);
-// clocks 
-pinMode(pinC1, INPUT);
-pinMode(pinC2, INPUT);
+  // inputs for four potentiometers:
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
 
-//switches
-pinMode(pinS1, INPUT);
-pinMode(pinS2, INPUT);
+  // clocks 
+  pinMode(pinC1, INPUT);
+  pinMode(pinC2, INPUT);
 
-noTone(pinO2);noTone(pinO1);
+  //switches
+  pinMode(pinS1, INPUT);
+  pinMode(pinS2, INPUT);
 
-//   Serial.begin(9600);
+ if(DEBUG){
+  Serial.begin(9600);
+ }
    randomSeed(analogRead(A5));
 
-   // FILL the TM lists
+   // FILL the initial TM lists
    for(int i=0;i<32;i++){
-     TMEM1[i] = random(1,63);
-     TMEM2[i] = random(1,63);
+     TMEM1[i] = random(1,4094);
+     TMEM2[i] = random(1,4094);
    }
    
-   // use a flip flop to decide is trigger has been handled already
+   // now using a flip flop to decide is trigger has been handled already
    CLOCKSEEN1=false;
    CLOCKSEEN2=false;
+   attachInterrupt(digitalPinToInterrupt(pinC1), ISR1, RISING);
+   attachInterrupt(digitalPinToInterrupt(pinC2), ISR2, RISING);
 
+}// done setup()
 
-
- TCCR2A = 0;
-  TCCR2B = 0;
- // TCCR2A = _BV(COM0A1) | _BV(WGM00) | _BV(WGM01) | _BV(WGM02);  // Clear OC1A (PIN 9) on Compare Match, set OC1A at Bottom; low WGM bits
- // TCCR2B = _BV(WGM13) | _BV(WGM12) | _BV(WGM11) | _BV(CS11);    // fast PWM mode 14, Prescaler=1
-
-  TCCR2A = _BV(COM2A1) | _BV(COM2B1) | _BV(WGM21) | _BV(WGM20);
-  TCCR2B = _BV(WGM22) | _BV(CS22);// | _BV(CS20);    // fast PWM mode 14
-   OCR2A = 64;
-   OCR2B = 10;
-   // PD3 is OC2B 
-   // and PD5 is OC0B
-   TCCR0A = _BV(COM0A1) | _BV(COM0B1) | _BV(WGM01) | _BV(WGM00);
-   TCCR0B = _BV(WGM02) | _BV(CS01) | _BV(CS00);    // fast PWM mode 14 
-   OCR0A = 64;
-   OCR0B = 10;
+void ISR1() {
+  CLOCKSEEN1 = true;
+}
+void ISR2() {
+  CLOCKSEEN2 = true;
 }
 
+
 void loop() {
-    // put your main code here, to run repeatedly:
 
-    bool CLOCK1_READ = digitalRead(pinC1);
-    //in demo mode
-  //  CLOCK1_READ = random(0,100) < random(0,10000);
+    if(CLOCKSEEN1){
+      ProcessSide1();
+      CLOCKSEEN1=false;
+    }
+    if(CLOCKSEEN2){
+      ProcessSide2();
+      CLOCKSEEN2=false;
+    }
     
-    if(!CLOCKSEEN1 & CLOCK1_READ){
-      // went up
-      CLOCKSEEN1=true;
-      SM1i++;
-      int newValue = 1; // placeholder for analowWrite()
-      int POTENTIOMETER_L1 = analogRead(pinL1);
-      int PatLength = POTENTIOMETER_L1/32+1; // 0-32 steps
-      if(SM1i >= PatLength){
-         SM1i = 0;
-      }
-  //    Serial.print("Begin Sequence 1 Index ");
-  //    Serial.println(SM1i);
-      
-       int POTENTIOMETER_P1 = analogRead(pinP1);  
-      // POTENTIOMETER_P1 = 100;
-       if(digitalRead(pinS1)){
-         //# pattern mode
-         int ii = (POTENTIOMETER_P1/4) + SM1i;
-         if(ii >= 256) ii = ii - 256;
-      
-   //      Serial.print("Setting O1 SMi:\t");
-   //      Serial.print(ii, DEC);
-   //      Serial.print("\tVAL\t");
-   //      Serial.print(SEQMEM1[ii], DEC);
-         
-      //   analogWrite(pinO1,SEQMEM1[ii]);
-         newValue = SEQMEM1[ii];
-
-       }else{
-         // TURING MODE
-  //    Serial.println("Turing mode");
-         // range of random thresh is 2x potentiometer
-         // so full clockwise = 50% flip
-         if(POTENTIOMETER_P1 > random(0,2048)){
-           TMEM1[SM1i] = random(1,63);
-         }
-   //      Serial.print("Setting O1 TM: ");
-   //      Serial.println(TMEM1[SM1i]);
-       //  analogWrite(pinO1,TMEM1[SM1i]);
-         newValue = TMEM1[SM1i];
-       }
- //      Serial.print("P1: ");
-  //     Serial.print(POTENTIOMETER_P1);
-  //     Serial.print("\t");
-  //     Serial.print("L1: ");
-  //     Serial.print(PatLength);
-  //     Serial.print("\t");
-  //     Serial.print("\n");
-   // set the analog pin correctly here:
-       OCR2B = newValue;
-    }
-    if(!CLOCK1_READ & CLOCKSEEN1){
-     // coming down
-     CLOCKSEEN1=false;
-     // dont do much on this event.
-    }
-
-    bool CLOCK2_READ = digitalRead(pinC2);
-    if(!CLOCKSEEN2 & CLOCK2_READ){
-      // went up
-      CLOCKSEEN2=true;
-      SM2i++;
-      int POTENTIOMETER_L2 = analogRead(pinL2);
-      int newValue = 1; // placeholder for new timer ticker.
-      int PatLength = POTENTIOMETER_L2/32+1; // 0-32 steps
-      if(SM2i >= PatLength){
-         SM2i=0;
-      }
-       int POTENTIOMETER_P2 = analogRead(pinP2);
-       if(digitalRead(pinS2)){
-         //# pattern mode
-         int ii = (POTENTIOMETER_P2/4) + SM2i;
-         if(ii >= 256) ii = ii - 256;
-        // analogWrite(pinO2,SEQMEM2[ii]);
-         newValue = SEQMEM2[ii];
-       }else{
-         // TURING MODE
-         // range of random thresh is 2x potentiometer
-         // so full clockwise = 50% flip
-         if(POTENTIOMETER_P2 > random(0,2048)){
-           TMEM2[SM2i] = random(1,63);
-         }
-   //      Serial.print("Setting O2 TM: ");
-   //      Serial.println(TMEM2[SM2i]);
-  //       analogWrite(pinO2,TMEM2[SM2i]);
-           newValue = TMEM2[SM2i];
-       }
-   //    Serial.print("P2: ");
-   //    Serial.print(POTENTIOMETER_P2);
-   //    Serial.print("\t");
-   //    Serial.print("L2: ");
-   //    Serial.print(PatLength);
-   //    Serial.print("\t");
-   //    Serial.print("\n");
-   // set the analogwrite here
-    OCR0B = newValue;
-    }
-    if(!CLOCK2_READ & CLOCKSEEN2){
-     // coming down
-     CLOCKSEEN2=false;
-     // dont do much on this event.
-    }
-
-   delay(50); // use shorter for PROD
-   // the faster clock means these may not be ms anymore.
+   delay(1);  // sleep might be pointless.....
 }
