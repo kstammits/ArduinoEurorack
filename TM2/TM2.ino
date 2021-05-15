@@ -1,5 +1,5 @@
 
-// V3 2021-05-15
+// V5 2021-05-15
 // adding a pin-high output to D12 so users have a place to 
 //   probe if the software is loaded properly!
 
@@ -27,6 +27,9 @@
 
 
 //Set up the DAC
+// we're using this library, you may need to install.
+// https://github.com/exscape/electronics/tree/master/Arduino/Libraries/DAC_MCP49xx
+//
 DAC_MCP49xx dac(DAC_MCP49xx::MCP4922, SS_PIN);
 
 /////////////////////////
