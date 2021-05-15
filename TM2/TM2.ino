@@ -1,10 +1,13 @@
 
+// V3 2021-05-15
+// adding a pin-high output to D12 so users have a place to 
+//   probe if the software is loaded properly!
 
 // VERSION 0
 // KDS 2019-12-07 a Turing Machine / Sequencer 2.
 // The Tooring Machine. . ! :)
 
-// these variables are holding 64 or 512 steps fo sequence
+// these variables are holding 64 or 512 steps of sequence
 // but due to knob precision, it's scaled back to 32/256
 
 
@@ -19,7 +22,7 @@
 //SPI:
 //10 (SS) or Chip Select,
 //11 (MOSI),
-//12 (MISO),
+//12 (MISO), (we don't use this, it would be communication from DAC to Nano)
 //13 (SCK).
 
 
@@ -97,6 +100,13 @@ void setup() {
    attachInterrupt(digitalPinToInterrupt(pinC1), ISR1, RISING);
    attachInterrupt(digitalPinToInterrupt(pinC2), ISR2, RISING);
 
+  // leave a pin held high so user an probe for the software's running
+   pinMode(12, OUTPUT);
+   digitalWrite(12,HIGH);
+  // also initialize triggers:
+   CLOCKSEEN1=true;
+   CLOCKSEEN2=true; // pretend it's fired once on startup.
+    
 }// done setup()
 
 void ISR1() {
