@@ -1,0 +1,21 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+During a recent screen of power usage I found the EuclidSeq to be by far the highest power user, nearly 100mA, where other analog modules used < 20 mA, and other Arduino based modules drawing 30 to 50 mA. My highest drawing modules are vacuum tube heating elements at 175 mA. \
+\
+The EuclidSeq reads at 96mA today on the +12V rail, and I began investigating by searching for the hot components. Perhaps my trigger reading circuit is poorly designed, or my LED drivers are wasting a lot of power. But it was only the Arduino that was hot. \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+The EuclidSeq only needs D2345 for outs, D6 for sensing triggers and A234567 for reading potentiometers.   Because EuclidSeq doesnt use very many output pins, I thought this was a good opportunity to use an Arduino Nano that has a few damaged pins. \
+\
+I have one unit where I had briefly allowed negative voltages to reach one of the GPIO pins. This caused a small puff of smoke and a visible mark on the CPU, deactivating pins D10 and D11.  Perhaps the damaged pins are still active, shunting power unecesarily. \
+\
+Need to replace that unit and re-measure the module. \
+\
+It's down to 22 mA. Negative rail usage was 1mA and still is, since the trigger reading and LED firing doesn't use any, it's just an operating allowance on the bipolar output buffer for speed. \
+}

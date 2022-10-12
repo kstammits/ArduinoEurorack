@@ -52,7 +52,8 @@ float TUNING_TRIMMER;
 
 
 #define DEBUG 0
-// debug means no MIDI IN, instead a USB/PC Serial
+// debug=1 means no MIDI IN, instead a USB/PC Serial
+// debug=0 uses that serial port for MIDI inputs, so ruinous to USB/PC
 
 
  // Created and binds the MIDI interface to the default hardware Serial port
@@ -151,7 +152,7 @@ void setup()
       //MIDI_in.begin(MIDI_CHANNEL_OMNI);  // Listen to all incoming messages
       MIDI_in.begin(1);  // Listen to all incoming messages
   }else{
-      Serial.begin(9600); Serial.print("Hello.\n");
+      Serial.begin(9600); Serial.print("Hello. from MIDI_2VC_1.2 or whatever\n");
   }
 
  
