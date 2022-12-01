@@ -9,7 +9,7 @@
 
 
 //// warning these pinouts are different on PCB vs the stripboard
-int LAYOUT_VERSION = 0; // 0 is the protoboard veroboard device
+//int LAYOUT_VERSION = 0; // 0 is the protoboard veroboard device
 int LAYOUT_VERSION = 1; // 1 is the v101 PCB
 // pin assignment variables:
 // willbe set in setup() at runtime 
